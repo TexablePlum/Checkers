@@ -1,12 +1,40 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Checkers.Application.Services;
+using Checkers.Core.Entities;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Checkers.API.Hubs
 {
     public class GameHub : Hub
     {
-        public async Task SendMove(string moveData)
+        private readonly GameLogicService _gameLogicService;
+
+        public GameHub(GameLogicService gameLogicService)
         {
-            await Clients.Others.SendAsync("ReceiveMove", moveData);
+            _gameLogicService = gameLogicService;
+        }
+
+        public override Task OnConnectedAsync()
+        {
+            Console.WriteLine($"Client connected: {Context.ConnectionId}");
+            Clients.Caller.SendAsync("UpdateBoard", _gameLogicService.GameBoard);
+
+            return base.OnConnectedAsync();
+        }
+
+        public async Task MakeMove(Move move) 
+        {
+            var isMoveValid = _gameLogicService.TryMakeMove(move);
+
+            if (isMoveValid)
+            {
+                Console.WriteLine($"Valid move made: {move.FromX},{move.FromY} to {move.ToX},{move.ToY}");
+                await Clients.All.SendAsync("UpdateBoard", _gameLogicService.GameBoard);
+            }
+            else 
+            {
+                Console.WriteLine($"Invalid move attempt: {move.FromX}, {move.FromY} to {move.ToX}, {move.ToY}");
+                await Clients.Caller.SendAsync("InvalidMove: ", move);
+            }
         }
     }
 }

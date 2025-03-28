@@ -1,20 +1,14 @@
 using Checkers.API.Hubs;
+using Checkers.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Dodaj us³ugi SignalR
 builder.Services.AddSignalR();
-
-// Pozosta³a konfiguracja
-builder.Services.AddControllers();
+builder.Services.AddSingleton<GameLogicService>(provider => new GameLogicService("Player1", "Player2"));
 
 var app = builder.Build();
 
-// Routing SignalR
-app.MapHub<GameHub>("/gameHub");
-
-// Domyœlne ustawienia
-app.UseHttpsRedirection();
-app.MapControllers();
+app.MapHub<GameHub>("/checkersHub");
+app.MapGet("/", () => "Checkers API is running!");
 
 app.Run();
